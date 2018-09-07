@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     # Application apps
     'blog',
 ]
-
+#222
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
