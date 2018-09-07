@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
 from django.forms import ValidationError
+from django.db.models import Q
 
 class UserCache:
     user_cache = None
@@ -38,3 +39,34 @@ class SignInLikeUsername(SignIn):
     def field_ordered(self):
         if settings.USE_REMEMBER_ME:
             return ['email', 'password', 'remember_me']
+        return ['email', 'password']
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        user = User.objects.filter(email__iexact = email).first()
+
+        if not user:
+            raise ValidationError(_('Enter valid email'))
+
+        if not user_is_active:
+            raise ValidationError(_('This account is not active'))
+
+        self.user_cache = user
+
+        return email
+
+class SignInLikeEmailorUserForm(SignIn):
+    user_or_email = forms.CharField(label=(_('Email or Username')))
+
+    @property
+    def field_ordered(self):
+        if settings.USE_REMEMBER_ME:
+            return ['user_or_email', 'password', 'remember_me']
+        return ['user_or_email', 'password']
+
+    def clean_user_or_email(self):
+        user_or_mail = self.cleaned_data['user_or_email']
+
+        user = User.objects.filter(Q(username=user_or_mail) | Q(email__iexact=user_or_mail)).first()
+        if not user:
+            raise ValidationError(_('Enter valid email or username'))

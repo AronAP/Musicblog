@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 class Username(models.Model):
     username = models.ForeignKey(User, on_delete=models.CASCADE)
     about_me = models.CharField(max_length = 150)
+    email = models.EmailField(blank = True)
 
     def get_absolute_url(self):
         """

@@ -39,4 +39,4 @@ def LogInViev(request):
     @staticmethod
     def get_class(**kwargs):
         if settings.DISABLE_USERNAME or settings.LOGIN_VIA_EMAIL:
-            return SignInLikeEmailFrom
+            return SignIn
