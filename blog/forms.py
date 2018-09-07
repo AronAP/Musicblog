@@ -33,6 +33,7 @@ class SignIn(UserCache, forms.Form):
 class SignInLikeUsername(SignIn):
     username = forms.CharField(label = _('Username'))
 
+
     @property
     def field_ordered(self):
         if settings.USE_REMEMBER_ME:
