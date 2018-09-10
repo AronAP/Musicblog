@@ -60,6 +60,30 @@ class SignInLikeUsername(SignIn):
         return email
 
 
+class SignInLikeEmailForm(SignIn):
+    email = forms.EmailField(label=_('Email'))
+
+    @property
+    def field_order(self):
+        if settings.USE_REMEMBER_ME:
+            return ['email', 'password', 'remember_me']
+        return ['email', 'password']
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            raise ValidationError(_('You entered an invalid email address.'))
+
+        if not user.is_active:
+            raise ValidationError(_('This account is not active.'))
+
+        self.user_cache = user
+
+        return email
+
+
 class SignInLikeEmailorUserForm(SignIn):
     user_or_email = forms.CharField(label=(_('Email or Username')))
 
