@@ -1,42 +1,43 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import auth
 from .models import User
 from django.conf import settings
+from django.views.generic import View, FormView
+from django.contrib.auth import login, authenticate, REDIRECT_FIELD_NAME
+from django.contrib import messages
+from django.utils.decorators import method_decorator
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
 
 
-def home(request):
+from . forms import SignInLikeUsername,SignInLikeEmailForm, SignInLikeEmailorUserForm
 
-    #num_post = Posts.objects.all().count()
 
-    num_user = User.objects.count()  # Метод 'all()' применен по умолчанию.
+class Guest(View):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_auntificated:
+            return redirect(settings.LOGIN_REDIRECT_URL)
+        return super().dispatch(request, *args, **kwargs)
 
-    # Отрисовка HTML-шаблона blog.html с данными внутри
-    # переменной контекста context
-    return render(
-        request,
-        'blog/home.html',
-        context={'num_user': num_user,},
-    )
 
-def login(request):
-    username = request.POST['username']
-    password = request.POST['password']
-    user = auth.authenticate(username = username, password = password)
-    if user is not None and user.is_active:
-        auth.login(request, user)
-        return HttpResponseRedirect("/account/loggedin/")
-    else:
-        return HttpResponseRedirect("/account/invalid/")
-
-def logout(request):
-    auth.login(request)
-    return HttpResponseRedirect("/account/loggedout")
-
-def LogInViev(request):
+class LogIn(Guest, FormView):
     template_name = 'blog/login.html'
 
     @staticmethod
-    def get_class(**kwargs):
+    def get_form_class(**kwargs):
         if settings.DISABLE_USERNAME or settings.LOGIN_VIA_EMAIL:
-            return SignIn
+            return SignInLikeEmailForm
+
+        if settings.LOGIN_VIA_EMAIL_OR_USERNAME:
+            return SignInLikeEmailorUserForm
+
+        return SignInLikeUsername
+
+    @method_decorator(sensitive_post_parameters('password'))
+    @method_decorator(csrf_protect)
+    @method_decorator(never_cache)
+    def dispatch(self, request, *args, **kwargs):
+        request.session.set_test_cookie()
+        return super().dispatch(request, *args, **kwargs)
