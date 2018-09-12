@@ -186,5 +186,5 @@ class RestorePasswordV(GuestV, FormView):
     def form_valid(self, form):
         user = form.user_cache
         token = default_token_generator.make_token(user)
-        
+
 
