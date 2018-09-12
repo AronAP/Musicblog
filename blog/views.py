@@ -14,15 +14,18 @@ from django.utils.http import is_safe_url
 from django.utils.crypto import get_random_string
 from .models import Username
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.tokens import default_token_generator
 from .utils import (
     send_act_email, send_reset_password_email, send_forgotten_username_email, send_act_change_email,
 )
 
 
-from . forms import SignInLikeUsername,SignInLikeEmailForm, SignInLikeEmailorUserForm, SignUpForm
+from . forms import SignInLikeUsernameF,SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF, \
+    ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF, \
+    ResetPasswordF,
 
 
-class Guest(View):
+class GuestV(View):
     #dispatch - check http , take request and some info
     def dispatch(self, request, *args, **kwargs):
         #check for auntification
@@ -33,7 +36,7 @@ class Guest(View):
     #super - for parents
 
 
-class LogIn(Guest, FormView):
+class LogInV(GuestV, FormView):
     template_name = 'blog/login.html'
     #load template
 
@@ -41,12 +44,12 @@ class LogIn(Guest, FormView):
     #staticmethod like function but whithout self
     def get_form_class(**kwargs):
         if settings.DISABLE_USERNAME or settings.LOGIN_VIA_EMAIL:
-            return SignInLikeEmailForm
+            return SignInLikeEmailF
 
         if settings.LOGIN_VIA_EMAIL_OR_USERNAME:
-            return SignInLikeEmailorUserForm
+            return SignInLikeEmailorUserF
 
-        return SignInLikeUsername
+        return SignInLikeUsernameF
 
     @method_decorator(sensitive_post_parameters('password'))
     @method_decorator(csrf_protect)
@@ -76,9 +79,9 @@ class LogIn(Guest, FormView):
         return redirect(settings.LOGIN_REDIRECT_URL)
 
 
-class SignUp(Guest, FormView):
+class SignUpV(GuestV, FormView):
     template_name = 'blog/sign_up.html'
-    form_class = SignUpForm
+    form_class = SignUpF
 
     def form_valid(self, form):
         request = self.request
@@ -123,7 +126,7 @@ class SignUp(Guest, FormView):
         return redirect('home')
 
 
-class ActivateView(View):
+class ActivateV(View):
     @staticmethod
     def get(request, code):
         act = get_object_or_404(Username, code=code)
@@ -134,3 +137,54 @@ class ActivateView(View):
         user.save()
 
         act.delete()
+
+        messages.success(request, _('U have successfully activated your account'))
+
+        return redirect('blog:log_in')
+
+
+class ResendActivCodeV(GuestV, FormView):
+    template_name = 'blog/resend_activation_code.html'
+
+    @staticmethod
+    def get_form_class(**kwargs):
+        if settings.DISABLE_USERNAME:
+            return ResendActivationCodeLikeEmailF
+
+        return ResendActivationCodeF
+
+    def form_valid(self, form):
+        user = form.user_cache
+
+        activation = user.activation_set.first()
+        activation.delete()
+
+        code = get_random_string(20)
+
+        act = Username()
+        act.code = code
+        act.user = user
+        act.save()
+
+        send_act_email(self.request, user.email, code)
+
+        messages.success(self.request, _('A new activation code has been sent to your email address.'))
+
+        return redirect('blog:resend_activation_code')
+
+
+class RestorePasswordV(GuestV, FormView):
+    template_name = 'blog/restore_password.html'
+
+    @staticmethod
+    def get_form_class(**kwargs):
+        if settings.RESTORE_PASSWORD_VIA_EMAIL_OR_USERNAME:
+            return ResetPasswordLikeEmailorUsernameF
+
+        return ResetPasswordF
+
+    def form_valid(self, form):
+        user = form.user_cache
+        token = default_token_generator.make_token(user)
+        
+

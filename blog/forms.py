@@ -13,7 +13,7 @@ class UserCache:
     user_cache = None
 
 
-class SignIn (UserCache, forms.Form):
+class SignInF (UserCache, forms.Form):
     password = forms.CharField(label=_('Password'),
                                strip=False, widget=forms.PasswordInput)
 
@@ -36,7 +36,7 @@ class SignIn (UserCache, forms.Form):
         return password
 
 
-class SignInLikeUsername(SignIn):
+class SignInLikeUsernameF(SignInF):
     username = forms.CharField(label=_('Username'))
 
     @property
@@ -60,7 +60,7 @@ class SignInLikeUsername(SignIn):
         return email
 
 
-class SignInLikeEmailForm(SignIn):
+class SignInLikeEmailF(SignInF):
     email = forms.EmailField(label=_('Email'))
 
     @property
@@ -84,7 +84,7 @@ class SignInLikeEmailForm(SignIn):
         return email
 
 
-class SignInLikeEmailorUserForm(SignIn):
+class SignInLikeEmailorUserF(SignInF):
     user_or_email = forms.CharField(label=(_('Email or Username')))
 
     @property
@@ -107,7 +107,7 @@ class SignInLikeEmailorUserForm(SignIn):
         return user_or_mail
 
 
-class SignUpForm(UserCreationForm):
+class SignUpF(UserCreationForm):
     class Meta:
         model = User
         field = settings.SIGN_UP_FIELDS
@@ -125,7 +125,7 @@ class SignUpForm(UserCreationForm):
         return email
 
 
-class ResendActivationCode(UserCache, forms.Form):
+class ResendActivationCodeF(UserCache, forms.Form):
     user_or_email = forms.CharField(label=_('Enter Email or Username'))
 
     def clean_user_or_mail(self):
@@ -152,7 +152,7 @@ class ResendActivationCode(UserCache, forms.Form):
         return user_or_email
 
 
-class ResetPasswordForm(UserCache, forms.Form):
+class ResetPasswordF(UserCache, forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def clean_email(self):
@@ -168,7 +168,7 @@ class ResetPasswordForm(UserCache, forms.Form):
         return email
 
 
-class ResetPasswordLikeEmailorUsername(UserCache, forms.Form):
+class ResetPasswordLikeEmailorUsernameF(UserCache, forms.Form):
     user_or_email = forms.CharField(label=_('Username or Email'))
 
     def clean_user_or_email(self):
@@ -185,12 +185,12 @@ class ResetPasswordLikeEmailorUsername(UserCache, forms.Form):
         return user_or_email
 
 
-class ChangeProfile(forms.Form):
+class ChangeProfileF(forms.Form):
     first_name = forms.CharField(label=_('First name'),
                                  max_length=30, required=False)
 
 
-class ChangeEmailForm(forms.Form):
+class ChangeEmailF(forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def __init__(self, user, *args, **kwargs):
@@ -211,7 +211,7 @@ class ChangeEmailForm(forms.Form):
         return email
 
 
-class RemindUsernameForm(UserCache, forms.Form):
+class RemindUsernameF(UserCache, forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def clean_email(self):
@@ -223,6 +223,33 @@ class RemindUsernameForm(UserCache, forms.Form):
 
         if not user.is_active:
             raise ValidationError(_('This account is not active.'))
+
+        self.user_cache = user
+
+        return email
+
+
+
+class ResendActivationCodeLikeEmailF(UserCache, forms.Form):
+    email = forms.EmailField(label=_('Email'))
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            raise ValidationError(_('You entered an invalid email address.'))
+
+        if user.is_active:
+            raise ValidationError(_('This account has already been activated.'))
+
+        activation = user.activation_set.first()
+        if not activation:
+            raise ValidationError(_('Activation code not found.'))
+
+        now_with_shift = timezone.now() - timedelta(hours=24)
+        if activation.created_at > now_with_shift:
+            raise ValidationError(_('Activation code has already been sent. You can request a new code in 24 hours.'))
 
         self.user_cache = user
 
