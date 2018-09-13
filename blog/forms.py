@@ -110,7 +110,7 @@ class SignInLikeEmailorUserF(SignInF):
 class SignUpF(UserCreationForm):
     class Meta:
         model = User
-        field = settings.SIGN_UP_FIELDS
+        fields = settings.SIGN_UP_FIELDS
 
     email = forms.EmailField(label=(_('Email')),
                              help_text=_('Enter an existing email address'))

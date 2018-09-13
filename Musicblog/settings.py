@@ -65,10 +65,10 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'app.wsgi.application'
+WSGI_APPLICATION = 'Musicblog.wsgi.application'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = os.path.join(CONTENT_DIR, 'tmp/emails')
+EMAIL_FILE_PATH = os.path.join(CONTENT_DIR, 'tmp/blog/mail')
 EMAIL_HOST_USER = 'test@example.com'
 DEFAULT_FROM_EMAIL = 'test@example.com'
 
@@ -99,7 +99,7 @@ DISABLE_USERNAME = False
 LOGIN_VIA_EMAIL = True
 LOGIN_VIA_EMAIL_OR_USERNAME = False
 LOGIN_REDIRECT_URL = 'index'
-LOGIN_URL = 'accounts:log_in'
+LOGIN_URL = 'blog:login'
 USE_REMEMBER_ME = True
 
 RESTORE_PASSWORD_VIA_EMAIL_OR_USERNAME = False
@@ -117,7 +117,6 @@ LANGUAGE_CODE = 'en'
 LANGUAGES = [
     ('en', _('English')),
     ('ru', _('Russian')),
-    ('zh-Hans', _('Simplified Chinese')),
 ]
 
 TIME_ZONE = 'UTC'

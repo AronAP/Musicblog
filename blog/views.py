@@ -11,7 +11,12 @@ from django.views.decorators.csrf import csrf_protect
 from django.utils.http import is_safe_url
 from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
-from .models import Username
+from .models import Profile
+from blog.forms import (
+    SignInLikeUsernameF,SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF,
+    ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF,
+    ResetPasswordF, ChangeEmailF, RemindUsernameF, ChangeProfileF,
+)
 from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.tokens import default_token_generator
@@ -19,21 +24,16 @@ from django.contrib.auth.views import (
     LogoutView as BaseLogoutView, PasswordChangeView as BasePasswordChangeView,
     PasswordResetDoneView as BasePasswordResetDoneView, PasswordResetConfirmView as BasePasswordResetConfirmView,
 )
-from .utils import (
+from blog.utils import (
     send_act_email, send_reset_password_email, send_forgotten_username_email, send_act_change_email,
 )
-
-
-from . forms import SignInLikeUsernameF,SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF, \
-    ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF, \
-    ResetPasswordF, ChangeEmailF, RemindUsernameF, ChangeProfileF
 
 
 class GuestV(View):
     #dispatch - check http , take request and some info
     def dispatch(self, request, *args, **kwargs):
         #check for aunthentication
-        if request.is_authenticated_:
+        if request.user.is_authenticated:
             return redirect(settings.LOGIN_REDIRECT_URL)
         #send to login page
         return super().dispatch(request, *args, **kwargs)
@@ -109,7 +109,7 @@ class SignUpV(GuestV, FormView):
         if settings.ENABLE_USER_ACTIVATION:
             code = get_random_string(20)
 
-            act = Username()
+            act = Profile()
             act.code = code
             act.user = user
             act.save()
@@ -120,7 +120,7 @@ class SignUpV(GuestV, FormView):
                 request, _('You are signed up. To activate the account, '
                            'follow the link sent to the mail.'))
         else:
-            raw_password = form.cleaned_data['new_password']
+            raw_password = form.cleaned_data['password1']
 
             user = authenticate(username=user.username, password=raw_password)
             login(request, user)
@@ -133,7 +133,7 @@ class SignUpV(GuestV, FormView):
 class ActivateV(View):
     @staticmethod
     def get(request, code):
-        act = get_object_or_404(Username, code=code)
+        act = get_object_or_404(Profile, code=code)
 
         #lets activate profile
         user = act.user
@@ -165,7 +165,7 @@ class ResendActivCodeV(GuestV, FormView):
 
         code = get_random_string(20)
 
-        act = Username()
+        act = Profile()
         act.code = code
         act.user = user
         act.save()
@@ -240,7 +240,7 @@ class ChangeEmailView(LoginRequiredMixin, FormView):
         if settings.ENABLE_ACTIVATION_AFTER_EMAIL_CHANGE:
             code = get_random_string(20)
 
-            act = Username()
+            act = Profile()
             act.code = code
             act.user = user
             act.email = email
@@ -261,7 +261,7 @@ class ChangeEmailView(LoginRequiredMixin, FormView):
 class ChangeEmailActView(View):
     @staticmethod
     def get(request, code):
-        act = get_object_or_404(Username, code = code)
+        act = get_object_or_404(Profile, code = code)
 
         user = act.user
         user.email = act.email
@@ -299,7 +299,7 @@ class ChangePasswordView(BasePasswordChangeView):
 
         messages.success(self.request, _('Your password was changed.'))
 
-        return redirect('accounts:change_password')
+        return redirect('blog:change_password')
 
 
 class RestorePasswordConfirmView(BasePasswordResetConfirmView):
@@ -311,7 +311,7 @@ class RestorePasswordConfirmView(BasePasswordResetConfirmView):
 
         messages.success(self.request, _('Your password has been set. You may go ahead and log in now.'))
 
-        return redirect('accounts:log_in')
+        return redirect('blog:log_in')
 
 
 class RestorePasswordDoneView(BasePasswordResetDoneView):

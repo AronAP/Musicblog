@@ -1,6 +1,5 @@
 from django.urls import path
-
-from .views import (
+from blog.views import (
     LogInV, ResendActivCodeV, RemindUsernameView, SignUpV, ActivateV, LogOutView,
     ChangeEmailView, ChangeEmailActView, ChangeProfileView, ChangePasswordView,
     RestorePasswordV, RestorePasswordDoneView, RestorePasswordConfirmView,

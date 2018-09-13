@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 def send_mail(to, template, context):
-    html_content = render_to_string(f'blog/mail/send_mail.html', context)
-    txt_context = render_to_string(f'blog/mail/send_mail.txt', context)
+    html_content = render_to_string(f'blog/mail/{template}.html', context)
+    txt_context = render_to_string(f'blog/mail/{template}.txt', context)
 
     msg = EmailMultiAlternatives(context['subject'], txt_context, settings.DEFAULT_FROM_EMAIL, [to])
     msg.attach_alternative(html_content, 'text/html')
