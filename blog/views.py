@@ -1,8 +1,6 @@
 from django.shortcuts import get_object_or_404, redirect
-from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib import auth
-from .models import User
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import View, FormView
 from django.contrib.auth import login, authenticate, REDIRECT_FIELD_NAME
 from django.contrib import messages
@@ -11,10 +9,16 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.utils.http import is_safe_url
+from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from .models import Username
+from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.views import (
+    LogoutView as BaseLogoutView, PasswordChangeView as BasePasswordChangeView,
+    PasswordResetDoneView as BasePasswordResetDoneView, PasswordResetConfirmView as BasePasswordResetConfirmView,
+)
 from .utils import (
     send_act_email, send_reset_password_email, send_forgotten_username_email, send_act_change_email,
 )
@@ -22,14 +26,14 @@ from .utils import (
 
 from . forms import SignInLikeUsernameF,SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF, \
     ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF, \
-    ResetPasswordF,
+    ResetPasswordF, ChangeEmailF, RemindUsernameF
 
 
 class GuestV(View):
     #dispatch - check http , take request and some info
     def dispatch(self, request, *args, **kwargs):
-        #check for auntification
-        if request.user.is_auntificated:
+        #check for aunthentication
+        if request.is_authenticated_:
             return redirect(settings.LOGIN_REDIRECT_URL)
         #send to login page
         return super().dispatch(request, *args, **kwargs)
@@ -99,7 +103,7 @@ class SignUpV(GuestV, FormView):
         user.save()
 
         if settings.DISABLE_USERNAME:
-            user.username = f'user_{user_id}'
+            user.username = f'user_{user.id}'
             user.save()
 
         if settings.ENABLE_USER_ACTIVATION:
@@ -133,7 +137,7 @@ class ActivateV(View):
 
         #lets activate profile
         user = act.user
-        user.is_active
+        user.is_active = True
         user.save()
 
         act.delete()
@@ -186,5 +190,111 @@ class RestorePasswordV(GuestV, FormView):
     def form_valid(self, form):
         user = form.user_cache
         token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk)).decode()
+
+        send_reset_password_email(self.request, user.email, token, uid)
+
+        return redirect('blog:restore_password_complete')
 
 
+class ChangeProfileView(LoginRequiredMixin, FormView):
+    template_name = 'blog/profile/change_profile.html'
+    form_class = ChangeEmailF
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['email'] = self.request.user.email
+        return initial
+
+    def form_valid(self, form):
+        user = self.request.user
+        email = form.cleaned_data['email']
+
+        if settings.ENABLE_ACTIVATION_AFTER_EMAIL_CHANGE:
+            code = get_random_string(20)
+
+            act = Username()
+            act.code = code
+            act.user = user
+            act.email = email
+            act.save()
+
+            send_act_change_email(self.request, email, code)
+
+            messages.success(self.request, _('To complete the change of email address, click on the link sent to it.'))
+        else:
+            user.email = email
+            user.save()
+
+            messages.success(self.request, _('Email successfully changed.'))
+
+        return redirect('blog:change_email')
+
+
+class ChangeEmailActView(View):
+    @staticmethod
+    def get(request, code):
+        act = get_object_or_404(Username, code = code)
+
+        user = act.user
+        user.email = act.email
+        user.save()
+
+        act.delete()
+
+        messages.success(request, _('You have successfully changed your email!'))
+
+        return  redirect('blog:change_email')
+
+
+class RemindUsernameView(GuestV, FormView):
+    template_name = 'blog/remind_username.html'
+    form_class = RemindUsernameF
+
+    def form_valid(self, form):
+        user = form.user_cache
+        send_forgotten_username_email(user.email, user.username)
+
+        messages.success(self.request, _('Your username has been successfully sent to your email.'))
+
+        return redirect('blog:remind_username')
+
+
+class ChangePasswordView(BasePasswordChangeView):
+    template_name = 'blog/profile/change_password.html'
+
+    def form_valid(self, form):
+        # Change the password
+        user = form.save()
+
+        # Re-authentication
+        login(self.request, user)
+
+        messages.success(self.request, _('Your password was changed.'))
+
+        return redirect('accounts:change_password')
+
+
+class RestorePasswordConfirmView(BasePasswordResetConfirmView):
+    template_name = 'blog/restore_password_confirm.html'
+
+    def form_valid(self, form):
+        # Change the password
+        form.save()
+
+        messages.success(self.request, _('Your password has been set. You may go ahead and log in now.'))
+
+        return redirect('accounts:log_in')
+
+
+class RestorePasswordDoneView(BasePasswordResetDoneView):
+    template_name = 'blog/restore_password_complete.html'
+
+
+class LogOutView(LoginRequiredMixin, BaseLogoutView):
+    template_name = 'blog/log_out.html'
