@@ -26,7 +26,7 @@ from .utils import (
 
 from . forms import SignInLikeUsernameF,SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF, \
     ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF, \
-    ResetPasswordF, ChangeEmailF, RemindUsernameF
+    ResetPasswordF, ChangeEmailF, RemindUsernameF, ChangeProfileF
 
 
 class GuestV(View):
@@ -199,6 +199,28 @@ class RestorePasswordV(GuestV, FormView):
 
 class ChangeProfileView(LoginRequiredMixin, FormView):
     template_name = 'blog/profile/change_profile.html'
+    form_class = ChangeProfileF
+
+    def get_initial(self):
+        user = self.request.user
+        initial = super().get_initial()
+        initial['first_name'] = user.first_name
+        initial['last_name'] = user.last_name
+        return initial
+
+    def form_valid(self, form):
+        user = self.request.user
+        user.first_name = form.cleaned_data['first_name']
+        user.last_name = form.cleaned_data['last_name']
+        user.save()
+
+        messages.success(self.request, _('Profile data has been successfully updated.'))
+
+        return redirect('accounts:change_profile')
+
+
+class ChangeEmailView(LoginRequiredMixin, FormView):
+    template_name = 'blog/profile/change_email.html'
     form_class = ChangeEmailF
 
     def get_form_kwargs(self):
