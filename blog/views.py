@@ -1,35 +1,36 @@
-from django.shortcuts import get_object_or_404, redirect
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import View, FormView
-from django.contrib.auth import login, authenticate, REDIRECT_FIELD_NAME
 from django.contrib import messages
-from django.utils.decorators import method_decorator
-from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
-from django.utils.http import is_safe_url
-from django.utils.encoding import force_bytes
-from django.utils.crypto import get_random_string
-from .models import Profile
-from blog.forms import (
-    SignInLikeUsernameF,SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF,
-    ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF,
-    ResetPasswordF, ChangeEmailF, RemindUsernameF, ChangeProfileF,
-)
-from django.utils.http import urlsafe_base64_encode
-from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import login, authenticate, REDIRECT_FIELD_NAME
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import (
     LogoutView as BaseLogoutView, PasswordChangeView as BasePasswordChangeView,
     PasswordResetDoneView as BasePasswordResetDoneView, PasswordResetConfirmView as BasePasswordResetConfirmView,
 )
+from django.shortcuts import get_object_or_404, redirect
+from django.utils.crypto import get_random_string
+from django.utils.decorators import method_decorator
+from django.utils.encoding import force_bytes
+from django.utils.http import is_safe_url
+from django.utils.http import urlsafe_base64_encode
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.generic import View, FormView
+
+from blog.forms import (
+    SignInLikeUsernameF, SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF,
+    ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF,
+    ResetPasswordF, ChangeEmailF, RemindUsernameF, ChangeProfileF,
+)
 from blog.utils import (
     send_act_email, send_reset_password_email, send_forgotten_username_email, send_act_change_email,
 )
+from .models import Profile
 
 
-class GuestV(View):
+class GuestMixin(View):
     #dispatch - check http , take request and some info
     def dispatch(self, request, *args, **kwargs):
         #check for aunthentication
@@ -40,7 +41,7 @@ class GuestV(View):
     #super - for parents
 
 
-class LogInV(GuestV, FormView):
+class LogInV(GuestMixin, FormView):
     template_name = 'blog/login.html'
     #load template
 
@@ -83,7 +84,7 @@ class LogInV(GuestV, FormView):
         return redirect(settings.LOGIN_REDIRECT_URL)
 
 
-class SignUpV(GuestV, FormView):
+class SignUpV(GuestMixin, FormView):
     template_name = 'blog/sign_up.html'
     form_class = SignUpF
 
@@ -147,7 +148,7 @@ class ActivateV(View):
         return redirect('blog:log_in')
 
 
-class ResendActivCodeV(GuestV, FormView):
+class ResendActivCodeV(GuestMixin, FormView):
     template_name = 'blog/resend_activation_code.html'
 
     @staticmethod
@@ -177,7 +178,7 @@ class ResendActivCodeV(GuestV, FormView):
         return redirect('blog:resend_activation_code')
 
 
-class RestorePasswordV(GuestV, FormView):
+class RestorePasswordV(GuestMixin, FormView):
     template_name = 'blog/restore_password.html'
 
     @staticmethod
@@ -274,7 +275,7 @@ class ChangeEmailActView(View):
         return  redirect('blog:change_email')
 
 
-class RemindUsernameView(GuestV, FormView):
+class RemindUsernameView(GuestMixin, FormView):
     template_name = 'blog/remind_username.html'
     form_class = RemindUsernameF
 
