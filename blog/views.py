@@ -20,9 +20,9 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import View, FormView
 
 from blog.forms import (
-    SignInLikeUsernameF, SignInLikeEmailF, SignInLikeEmailorUserF, SignUpF,
-    ResendActivationCodeLikeEmailF, ResendActivationCodeF, ResetPasswordLikeEmailorUsernameF,
-    ResetPasswordF, ChangeEmailF, RemindUsernameF, ChangeProfileF,
+    SignInLikeUsernameForm, SignInLikeEmailForm, SignInLikeEmailorUserForm, SignUpForm,
+    ResendActivationCodeLikeEmailForm, ResendActivationCodeForm, ResetPasswordLikeEmailorUsernameForm,
+    ResetPasswordForm, ChangeEmailForm, RemindUsernameForm, ChangeProfileForm,
 )
 from blog.utils import (
     send_act_email, send_reset_password_email, send_forgotten_username_email, send_act_change_email,
@@ -35,13 +35,13 @@ class GuestMixin(View):
     def dispatch(self, request, *args, **kwargs):
         #check for aunthentication
         if request.user.is_authenticated:
-            return redirect(settings.LOGIN_REDIRECT_URL)
+            return redirect('home')
         #send to login page
         return super().dispatch(request, *args, **kwargs)
     #super - for parents
 
 
-class LogInV(GuestMixin, FormView):
+class LogInView(GuestMixin, FormView):
     template_name = 'blog/login.html'
     #load template
 
@@ -49,12 +49,12 @@ class LogInV(GuestMixin, FormView):
     #staticmethod like function but whithout self
     def get_form_class(**kwargs):
         if settings.DISABLE_USERNAME or settings.LOGIN_VIA_EMAIL:
-            return SignInLikeEmailF
+            return SignInLikeEmailForm
 
         if settings.LOGIN_VIA_EMAIL_OR_USERNAME:
-            return SignInLikeEmailorUserF
+            return SignInLikeEmailorUserForm
 
-        return SignInLikeUsernameF
+        return SignInLikeUsernameForm
 
     @method_decorator(sensitive_post_parameters('password'))
     @method_decorator(csrf_protect)
@@ -84,9 +84,9 @@ class LogInV(GuestMixin, FormView):
         return redirect(settings.LOGIN_REDIRECT_URL)
 
 
-class SignUpV(GuestMixin, FormView):
+class SignUpView(GuestMixin, FormView):
     template_name = 'blog/sign_up.html'
-    form_class = SignUpF
+    form_class = SignUpForm
 
     def form_valid(self, form):
         request = self.request
@@ -131,7 +131,7 @@ class SignUpV(GuestMixin, FormView):
         return redirect('home')
 
 
-class ActivateV(View):
+class ActivateView(View):
     @staticmethod
     def get(request, code):
         act = get_object_or_404(Profile, code=code)
@@ -148,15 +148,15 @@ class ActivateV(View):
         return redirect('blog:log_in')
 
 
-class ResendActivCodeV(GuestMixin, FormView):
+class ResendActivationCodeView(GuestMixin, FormView):
     template_name = 'blog/resend_activation_code.html'
 
     @staticmethod
     def get_form_class(**kwargs):
         if settings.DISABLE_USERNAME:
-            return ResendActivationCodeLikeEmailF
+            return ResendActivationCodeLikeEmailForm
 
-        return ResendActivationCodeF
+        return ResendActivationCodeForm
 
     def form_valid(self, form):
         user = form.user_cache
@@ -178,15 +178,15 @@ class ResendActivCodeV(GuestMixin, FormView):
         return redirect('blog:resend_activation_code')
 
 
-class RestorePasswordV(GuestMixin, FormView):
+class RestorePasswordView(GuestMixin, FormView):
     template_name = 'blog/restore_password.html'
 
     @staticmethod
     def get_form_class(**kwargs):
         if settings.RESTORE_PASSWORD_VIA_EMAIL_OR_USERNAME:
-            return ResetPasswordLikeEmailorUsernameF
+            return ResetPasswordLikeEmailorUsernameForm
 
-        return ResetPasswordF
+        return ResetPasswordForm
 
     def form_valid(self, form):
         user = form.user_cache
@@ -200,7 +200,7 @@ class RestorePasswordV(GuestMixin, FormView):
 
 class ChangeProfileView(LoginRequiredMixin, FormView):
     template_name = 'blog/profile/change_profile.html'
-    form_class = ChangeProfileF
+    form_class = ChangeProfileForm
 
     def get_initial(self):
         user = self.request.user
@@ -217,12 +217,13 @@ class ChangeProfileView(LoginRequiredMixin, FormView):
 
         messages.success(self.request, _('Profile data has been successfully updated.'))
 
-        return redirect('accounts:change_profile')
+        return redirect('blog:change_profile')
+
 
 
 class ChangeEmailView(LoginRequiredMixin, FormView):
     template_name = 'blog/profile/change_email.html'
-    form_class = ChangeEmailF
+    form_class = ChangeEmailForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -259,7 +260,7 @@ class ChangeEmailView(LoginRequiredMixin, FormView):
         return redirect('blog:change_email')
 
 
-class ChangeEmailActView(View):
+class ChangeEmailActivationView(View):
     @staticmethod
     def get(request, code):
         act = get_object_or_404(Profile, code = code)
@@ -277,7 +278,7 @@ class ChangeEmailActView(View):
 
 class RemindUsernameView(GuestMixin, FormView):
     template_name = 'blog/remind_username.html'
-    form_class = RemindUsernameF
+    form_class = RemindUsernameForm
 
     def form_valid(self, form):
         user = form.user_cache

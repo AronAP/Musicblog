@@ -1,22 +1,23 @@
 from django.urls import path
+
 from blog.views import (
-    LogInV, ResendActivCodeV, RemindUsernameView, SignUpV, ActivateV, LogOutView,
-    ChangeEmailView, ChangeEmailActView, ChangeProfileView, ChangePasswordView,
-    RestorePasswordV, RestorePasswordDoneView, RestorePasswordConfirmView,
+    LogInView, ResendActivationCodeView, RemindUsernameView, SignUpView, ActivateView, LogOutView,
+    ChangeEmailView, ChangeEmailActivationView, ChangeProfileView, ChangePasswordView,
+    RestorePasswordView, RestorePasswordDoneView, RestorePasswordConfirmView,
 )
 
 app_name = 'blog'
 
 urlpatterns = [
-    path('log-in/', LogInV.as_view(), name='log_in'),
+    path('log-in/', LogInView.as_view(), name='log_in'),
     path('log-out/', LogOutView.as_view(), name='log_out'),
 
-    path('resend/activation-code/', ResendActivCodeV.as_view(), name='resend_activation_code'),
+    path('resend/activation-code/', ResendActivationCodeView.as_view(), name='resend_activation_code'),
 
-    path('sign-up/', SignUpV.as_view(), name='sign_up'),
-    path('activate/<code>/', ActivateV.as_view(), name='activate'),
+    path('sign-up/', SignUpView.as_view(), name='sign_up'),
+    path('activate/<code>/', ActivateView.as_view(), name='activate'),
 
-    path('restore/password/', RestorePasswordV.as_view(), name='restore_password'),
+    path('restore/password/', RestorePasswordView.as_view(), name='restore_password'),
     path('restore/password/done/', RestorePasswordDoneView.as_view(), name='restore_password_done'),
     path('restore/<uidb64>/<token>/', RestorePasswordConfirmView.as_view(), name='restore_password_confirm'),
 
@@ -25,5 +26,5 @@ urlpatterns = [
     path('change/profile/', ChangeProfileView.as_view(), name='change_profile'),
     path('change/password/', ChangePasswordView.as_view(), name='change_password'),
     path('change/email/', ChangeEmailView.as_view(), name='change_email'),
-    path('change/email/<code>/', ChangeEmailActView.as_view(), name='change_email_activation'),
+    path('change/email/<code>/', ChangeEmailActivationView.as_view(), name='change_email_activation'),
 ]

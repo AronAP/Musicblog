@@ -1,19 +1,20 @@
 from datetime import timedelta
-from django.conf import settings
+
 from django import forms
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
-from django.utils.translation import gettext_lazy as _
-from django.forms import ValidationError
+from django.contrib.auth.models import User
 from django.db.models import Q
+from django.forms import ValidationError
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class UserCache:
     user_cache = None
 
 
-class SignInF (UserCache, forms.Form):
+class SignInForm(UserCache, forms.Form):
     password = forms.CharField(label=_('Password'),
                                strip=False, widget=forms.PasswordInput)
 
@@ -36,7 +37,7 @@ class SignInF (UserCache, forms.Form):
         return password
 
 
-class SignInLikeUsernameF(SignInF):
+class SignInLikeUsernameForm(SignInForm):
     username = forms.CharField(label=_('Username'))
 
     @property
@@ -60,7 +61,7 @@ class SignInLikeUsernameF(SignInF):
         return email
 
 
-class SignInLikeEmailF(SignInF):
+class SignInLikeEmailForm(SignInForm):
     email = forms.EmailField(label=_('Email'))
 
     @property
@@ -84,7 +85,7 @@ class SignInLikeEmailF(SignInF):
         return email
 
 
-class SignInLikeEmailorUserF(SignInF):
+class SignInLikeEmailorUserForm(SignInForm):
     user_or_email = forms.CharField(label=(_('Email or Username')))
 
     @property
@@ -107,7 +108,7 @@ class SignInLikeEmailorUserF(SignInF):
         return user_or_mail
 
 
-class SignUpF(UserCreationForm):
+class SignUpForm(UserCreationForm):
     class Meta:
         model = User
         fields = settings.SIGN_UP_FIELDS
@@ -125,7 +126,7 @@ class SignUpF(UserCreationForm):
         return email
 
 
-class ResendActivationCodeF(UserCache, forms.Form):
+class ResendActivationCodeForm(UserCache, forms.Form):
     user_or_email = forms.CharField(label=_('Enter Email or Username'))
 
     def clean_user_or_mail(self):
@@ -152,7 +153,7 @@ class ResendActivationCodeF(UserCache, forms.Form):
         return user_or_email
 
 
-class ResetPasswordF(UserCache, forms.Form):
+class ResetPasswordForm(UserCache, forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def clean_email(self):
@@ -168,7 +169,7 @@ class ResetPasswordF(UserCache, forms.Form):
         return email
 
 
-class ResetPasswordLikeEmailorUsernameF(UserCache, forms.Form):
+class ResetPasswordLikeEmailorUsernameForm(UserCache, forms.Form):
     user_or_email = forms.CharField(label=_('Username or Email'))
 
     def clean_user_or_email(self):
@@ -185,12 +186,12 @@ class ResetPasswordLikeEmailorUsernameF(UserCache, forms.Form):
         return user_or_email
 
 
-class ChangeProfileF(forms.Form):
+class ChangeProfileForm(forms.Form):
     first_name = forms.CharField(label=_('First name'),
                                  max_length=30, required=False)
 
 
-class ChangeEmailF(forms.Form):
+class ChangeEmailForm(forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def __init__(self, user, *args, **kwargs):
@@ -211,7 +212,7 @@ class ChangeEmailF(forms.Form):
         return email
 
 
-class RemindUsernameF(UserCache, forms.Form):
+class RemindUsernameForm(UserCache, forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def clean_email(self):
@@ -229,8 +230,7 @@ class RemindUsernameF(UserCache, forms.Form):
         return email
 
 
-
-class ResendActivationCodeLikeEmailF(UserCache, forms.Form):
+class ResendActivationCodeLikeEmailForm(UserCache, forms.Form):
     email = forms.EmailField(label=_('Email'))
 
     def clean_email(self):
